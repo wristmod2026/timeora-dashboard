@@ -1,20 +1,405 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Timeora Orders</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='none' stroke='%23111' stroke-width='3'/><path d='M16 9v7l5 3' stroke='%23111' stroke-width='3' fill='none' stroke-linecap='round'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='none' stroke='%23b8935a' stroke-width='3'/><path d='M16 9v7l5 3' stroke='%23b8935a' stroke-width='3' fill='none' stroke-linecap='round'/></svg>">
 <style>
-  html,body{margin:0;height:100%;background:#f5f3ef}
-  iframe{border:0;width:100%;height:100%;display:block}
-  .help{position:fixed;bottom:8px;right:10px;font:12px system-ui,sans-serif;color:#888}
-  .help a{color:#888}
+:root{
+  --bg:#f5f3ef; --card:#fff; --ink:#1b1a18; --muted:#77736b; --line:#e6e2da;
+  --gold:#a8834b; --gold-soft:#f3ead9;
+  --new:#2f6fd6; --new-bg:#e6efff;
+  --wait:#b26b00; --wait-bg:#fff1d9;
+  --ok:#18794e; --ok-bg:#ddf3e7;
+  --bad:#c0392b; --bad-bg:#fbe3e0;
+  --ship:#6a4fc4; --ship-bg:#ece7fb;
+  --done:#0f6b5c; --done-bg:#d8f1ec;
+  --ret:#8a5a2b; --ret-bg:#f4e6d6;
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121211; --card:#1c1b19; --ink:#f1eee8; --muted:#a29d93; --line:#2f2d29;
+  --gold:#d2ad6e; --gold-soft:#2c2519;
+  --new:#7aa7ff; --new-bg:#1b2840; --wait:#f0b45a; --wait-bg:#3a2a12;
+  --ok:#5fd39b; --ok-bg:#15301f; --bad:#ff8a7c; --bad-bg:#3a1a16;
+  --ship:#b4a1ff; --ship-bg:#271f42; --done:#5cd1bd; --done-bg:#12302b;
+  --ret:#e0b083; --ret-bg:#33251a;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.2px}
+.brand svg{width:28px;height:28px}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.fb{background:var(--ship-bg);color:var(--ship);border-radius:10px;padding:6px 10px;font-size:13.5px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fb a{color:inherit}
+.btn.fbsend{background:var(--ship);color:#fff;border-color:var(--ship)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--gold)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.stat .k{color:var(--muted);font-size:12.5px}
+.stat .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.stat.hl{background:var(--gold-soft);border-color:transparent}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;flex:1 1 auto;scrollbar-width:none}
+.tab{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap;font-size:14px}
+.tab.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab .n{opacity:.65;margin-left:4px}
+.search{flex:1 1 220px;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px}
+.list{display:grid;gap:10px}
+.order{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:10px}
+.order.fresh{box-shadow:0 0 0 2px var(--gold)}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.num{font-weight:700}
+.time{color:var(--muted);font-size:13px}
+.pill{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:600}
+.s-new{color:var(--new);background:var(--new-bg)} .s-no_answer{color:var(--wait);background:var(--wait-bg)}
+.s-confirmed{color:var(--ok);background:var(--ok-bg)} .s-cancelled{color:var(--bad);background:var(--bad-bg)}
+.s-shipped{color:var(--ship);background:var(--ship-bg)} .s-delivered{color:var(--done);background:var(--done-bg)}
+.s-returned{color:var(--ret);background:var(--ret-bg)}
+.offer{background:var(--gold-soft);color:var(--gold);font-weight:600}
+.grid{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.cust .name{font-weight:600;font-size:16px}
+.cust .addr{color:var(--muted);font-size:14px}
+.phone{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+.phone a{text-decoration:none;color:inherit}
+.call{background:var(--ok);color:#fff!important;border-radius:10px;padding:7px 12px;font-weight:600}
+.wa{border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.items{font-size:14px}
+.items div{display:flex;justify-content:space-between;gap:10px}
+.items .tot{border-top:1px dashed var(--line);margin-top:6px;padding-top:6px;font-weight:700}
+.muted{color:var(--muted)}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions .btn{font-size:13.5px;padding:6px 10px}
+.actions .btn.cur{outline:2px solid var(--ink)}
+.row2{display:grid;grid-template-columns:1fr 200px;gap:8px}
+@media(max-width:720px){.row2{grid-template-columns:1fr}}
+textarea,.trk{width:100%;border:1px solid var(--line);background:transparent;border-radius:10px;padding:8px 10px}
+textarea{resize:vertical;min-height:38px}
+.warn{background:var(--bad-bg);color:var(--bad);border-radius:10px;padding:6px 10px;font-size:13px}
+.empty{text-align:center;color:var(--muted);padding:40px 0}
+#login{min-height:100vh;display:grid;place-items:center;padding:16px}
+#login form{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;width:100%;max-width:340px;display:grid;gap:12px}
+#login input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:transparent}
+#login h1{margin:0;font-size:20px}
+.err{color:var(--bad);font-size:14px;min-height:1em}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;place-items:center;padding:16px;z-index:9}
+.modal.on{display:grid}
+.modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:520px;width:100%;display:grid;gap:10px}
+.modal pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);border-radius:10px;padding:10px;font-size:13px;margin:0}
+.hidden{display:none!important}
+.sel{width:20px;height:20px;accent-color:var(--ink);margin:0 8px 0 0;vertical-align:-4px;cursor:pointer}
+.selbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111827;color:#fff;border-radius:999px;padding:8px 8px 8px 20px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 30px rgba(0,0,0,.3);z-index:8;font-weight:700;white-space:nowrap}
+.selbar button{border:0;border-radius:999px;padding:10px 18px;font-weight:700;cursor:pointer;background:#fff;color:#111}
+.selbar .x{background:transparent;color:#fff;padding:6px 10px}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(520px,100%);background:var(--card);z-index:10;box-shadow:-10px 0 40px rgba(0,0,0,.25);display:none;flex-direction:column}
+.drawer.on{display:flex}
+.dh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:21px}
+.dbody{overflow:auto;padding:16px 20px 40px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.tile{border:1px solid var(--line);border-radius:14px;padding:14px 6px;text-align:center;background:var(--bg)}
+.tile b{display:block;font-size:28px;line-height:1.2}
+.tile span{font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:700}
+.lbl{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:2px}
+.pk{display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.pk img,.pk .ph{width:64px;height:64px;border-radius:12px;object-fit:contain;background:#f3f4f6;display:grid;place-items:center;font-size:26px}
+.pk .t{font-weight:700;line-height:1.25}
+.pk .v{color:var(--muted);font-size:14px}
+.pk .o{color:var(--muted);font-size:12.5px}
+.pk .q{background:#111827;color:#fff;border-radius:10px;padding:8px 12px;font-weight:800;font-size:18px}
+@media print{#login,#app,#modal,#selbar{display:none!important}#drawer{position:static;display:flex!important;box-shadow:none;width:100%;height:auto}.noprint{display:none!important}.dbody{overflow:visible}}
 </style>
 </head>
 <body>
-<iframe src="https://script.google.com/macros/s/AKfycbzMbir1Ewc0YS-QzGoABymBndQadbSrI-DWdeQjJT20r5Z27IJTQ_iuekW9jwROqBxxqQ/exec?page=admin" title="Timeora Orders" allow="clipboard-write"></iframe>
-<div class="help">Page blanche ? <a href="https://script.google.com/macros/s/AKfycbzMbir1Ewc0YS-QzGoABymBndQadbSrI-DWdeQjJT20r5Z27IJTQ_iuekW9jwROqBxxqQ/exec?page=admin" target="_top">Ouvrir en plein écran</a></div>
+
+<div id="login">
+  <form id="loginForm">
+    <div class="brand"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M16 9v7l5 3" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg> Timeora Orders</div>
+    <h1>Sign in</h1>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button class="btn primary" type="submit">Open dashboard</button>
+    <div class="err" id="loginErr"></div>
+    <div class="muted" style="font-size:13px">Première connexion : le mot de passe que vous tapez devient votre mot de passe (8 caractères minimum).</div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <div class="wrap">
+    <header>
+      <div class="brand"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M16 9v7l5 3" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg> Timeora Orders</div>
+      <div class="hbtns">
+        <button class="btn" id="fbAllBtn" title="Créer les colis Fiabilo pour toutes les commandes confirmées">🚚 Envoyer confirmés</button>
+        <button class="btn" id="fbSyncBtn" title="Mettre à jour le suivi Fiabilo">🔄 Suivi</button>
+        <button class="btn" id="exportBtn" title="Download confirmed orders for the delivery company">⬇ Export</button>
+        <button class="btn" id="logoutBtn">Log out</button>
+      </div>
+    </header>
+
+    <section class="stats" id="stats"></section>
+
+    <div class="toolbar">
+      <div class="tabs" id="tabs"></div>
+      <button class="btn" id="selAll" title="Sélectionner toutes les commandes de cet onglet">☑ Tout</button>
+      <input class="search" id="q" placeholder="Search name, phone, order #">
+    </div>
+
+    <section class="list" id="list"></section>
+  </div>
+</div>
+
+<div class="selbar hidden" id="selbar"><span id="selN"></span><button id="pilotBtn">📦 Stock pilot</button><button class="x" id="selClear" title="Tout désélectionner">✕</button></div>
+<div class="drawer" id="drawer"><div class="dh"><div><h2>Stock pilot</h2><div class="muted" id="pilotSub"></div></div><div class="noprint" style="display:flex;gap:8px"><button class="btn" id="pilotPrint">🖨 Imprimer</button><button class="btn" id="pilotClose">✕</button></div></div><div class="dbody" id="pilotBody"></div></div>
+<div class="modal" id="modal"><div class="box"><div id="modalBody"></div><button class="btn" onclick="closeModal()">Close</button></div></div>
+
+<script>
+const STATUS = {
+  new:{label:"New", next:["confirmed","no_answer","cancelled"]},
+  no_answer:{label:"No answer", next:["confirmed","no_answer","cancelled"]},
+  confirmed:{label:"Confirmed", next:["shipped","cancelled"]},
+  cancelled:{label:"Cancelled", next:["new"]},
+  shipped:{label:"Shipped", next:["delivered","returned"]},
+  delivered:{label:"Delivered", next:[]},
+  returned:{label:"Returned", next:[]},
+};
+const TABS = [["todo","To call"],["all","All"],["new","New"],["no_answer","No answer"],["confirmed","Confirmed"],["shipped","Shipped"],["delivered","Delivered"],["returned","Returned"],["cancelled","Cancelled"]];
+let token = null, orders = [], tab = "todo", knownIds = null, selected = new Set(), lastRows = [];
+try { token = localStorage.getItem("ordersToken"); tab = localStorage.getItem("ordersTab") || "todo"; } catch(e){}
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = (n,c) => { n = Number(n)||0; return (Number.isInteger(n)? n : n.toFixed(3).replace(/0+$/,"")) + " " + (c==="TND"||!c ? "DT" : c); };
+const ago = iso => { const d=(Date.now()-new Date(iso))/1000; if(d<60) return "just now"; if(d<3600) return Math.floor(d/60)+" min ago"; if(d<86400) return Math.floor(d/3600)+" h ago"; return new Date(iso).toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}); };
+
+const API_URL = "https://script.google.com/macros/s/AKfycbzMbir1Ewc0YS-QzGoABymBndQadbSrI-DWdeQjJT20r5Z27IJTQ_iuekW9jwROqBxxqQ/exec";
+async function gfetch(path, opts){ opts = opts || {}; const h = opts.headers || {}; const auth = String(h.authorization || "").replace(/^Bearer\s+/i, "");
+  const r = await fetch(API_URL, { method: "POST", headers: { "content-type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ dashApi: 1, token: auth, method: opts.method || "GET", path: path, body: opts.body || "" }) });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const x = await r.json();
+  return { status: x.status, ok: x.status < 300, json: () => Promise.resolve(x.data) }; }
+async function api(path, opts={}) {
+  const r = await gfetch(path, {...opts, headers:{"content-type":"application/json", authorization:"Bearer "+token, ...(opts.headers||{})}});
+  if (r.status === 401) { logout(); throw new Error("Unauthorized"); }
+  return r.json();
+}
+
+$("#loginForm").onsubmit = async e => {
+  e.preventDefault(); $("#loginErr").textContent = "";
+  let r; try { r = await gfetch("/api/login", {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({password:$("#pw").value})}); } catch(x) { $("#loginErr").textContent = "Connexion impossible, réessayez."; return; }
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) { $("#loginErr").textContent = d.error || "Error"; return; }
+  token = d.token; try{ localStorage.setItem("ordersToken", token); }catch(e){}
+  start();
+};
+function logout(){ token=null; try{localStorage.removeItem("ordersToken")}catch(e){}; $("#app").classList.add("hidden"); $("#login").classList.remove("hidden"); }
+$("#logoutBtn").onclick = logout;
+
+async function load(){
+  if (pending) return;
+  const d = await api("/api/orders");
+  if (pending) return;
+  const fresh = new Set();
+  if (knownIds) for (const o of d.orders) if (!knownIds.has(o.id)) fresh.add(o.id);
+  if (fresh.size) document.title = `(${fresh.size}) New order!`;
+  knownIds = new Set(d.orders.map(o=>o.id));
+  orders = d.orders.map(o => ({...o, _fresh: fresh.has(o.id)}));
+  for (const id of [...selected]) if (!knownIds.has(id)) selected.delete(id);
+  // don't redraw while the user is typing a note or tracking number
+  const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest("#list");
+  if (!typing) render();
+}
+
+function inTab(o){ return tab==="all" ? true : tab==="todo" ? (o.status==="new"||o.status==="no_answer") : o.status===tab; }
+
+function render(){
+  // stats
+  const today = new Date().toDateString();
+  const cnt = s => orders.filter(o=>o.status===s).length;
+  const decided = cnt("confirmed")+cnt("shipped")+cnt("delivered")+cnt("returned")+cnt("cancelled");
+  const confirmedish = decided - cnt("cancelled");
+  const shippedOut = orders.filter(o=>o.status==="shipped");
+  const delivered = orders.filter(o=>o.status==="delivered");
+  const cur = orders[0]?.currency;
+  const stats = [
+    ["Orders today", orders.filter(o=>new Date(o.createdAt).toDateString()===today).length, true],
+    ["To call", cnt("new")+cnt("no_answer")],
+    ["Confirmation rate", decided ? Math.round(confirmedish/decided*100)+"%" : "—"],
+    ["With delivery", shippedOut.length],
+    ["Cash to collect", money(shippedOut.reduce((s,o)=>s+o.total,0), cur)],
+    ["Delivered revenue", money(delivered.reduce((s,o)=>s+o.total,0), cur)],
+  ];
+  $("#stats").innerHTML = stats.map(([k,v,hl])=>`<div class="stat${hl?" hl":""}"><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`).join("");
+
+  // tabs
+  $("#tabs").innerHTML = TABS.map(([k,l])=>{
+    const n = k==="all"?orders.length : k==="todo"? cnt("new")+cnt("no_answer") : cnt(k);
+    return `<button class="tab${k===tab?" on":""}" data-tab="${k}">${l}<span class="n">${n}</span></button>`;
+  }).join("");
+
+  // list
+  const q = $("#q").value.trim().toLowerCase();
+  const rows = orders.filter(inTab).filter(o => !q || [o.customer.name,o.customer.phone,o.shopifyName,o.id,o.customer.city].join(" ").toLowerCase().includes(q));
+  lastRows = rows;
+  $("#list").innerHTML = rows.length ? rows.map(card).join("") : `<div class="empty">No orders here yet.</div>`;
+  updateSelbar();
+}
+
+function card(o){
+  const c = o.customer, st = STATUS[o.status] || STATUS.new;
+  const waMsg = encodeURIComponent(`Bonjour ${c.name}, merci pour votre commande ${o.shopifyName||""} (${money(o.total,o.currency)}). Pouvez-vous confirmer votre adresse de livraison ?`);
+  return `<article class="order${o._fresh?" fresh":""}" data-id="${esc(o.id)}">
+    <div class="top">
+      <div><input type="checkbox" class="sel" data-sel="${esc(o.id)}" ${selected.has(o.id)?"checked":""} title="Sélectionner"><span class="num">${esc(o.shopifyName || "#"+o.id)}</span> <span class="time">· ${ago(o.createdAt)}${o.source==="shopify"?" · Shopify checkout":""}</span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${o.offer && (o.offer.startsWith("3") || o.offer.includes("offre 3"))?`<span class="pill offer">🔥 ${esc(o.offer)}</span>`:""}<span class="pill s-${o.status}">${st.label}</span></div>
+    </div>
+    ${o.shopifyError?`<div class="warn">⚠ Not created in Shopify: ${esc(o.shopifyError)}</div>`:""}
+    <div class="grid">
+      <div class="cust">
+        <div class="name">${esc(c.name)}</div>
+        <div class="phone">
+          <a class="call" href="tel:+216${esc(c.phone)}">📞 ${esc(c.phone)}</a>
+          <a class="wa" target="_blank" rel="noopener" href="https://wa.me/216${esc(c.phone)}?text=${waMsg}">WhatsApp</a>
+          <button class="btn" data-act="call" title="Count a call attempt">Calls: ${o.calls||0} +1</button>
+        </div>
+        <div class="addr">${esc([c.address, c.city, c.governorate].filter(Boolean).join(", "))}</div>
+      </div>
+      <div class="items">
+        ${o.items.map(i=>`<div><span>${esc(i.title)}${i.variantTitle?` <span class="muted">(${esc(i.variantTitle)})</span>`:""}</span><span>${money(i.price,o.currency)}</span></div>`).join("")}
+        ${o.discount?`<div class="muted"><span>Offer discount</span><span>−${money(o.discount,o.currency)}</span></div>`:""}
+        ${o.shipping?`<div class="muted"><span>Delivery</span><span>${money(o.shipping,o.currency)}</span></div>`:""}
+        <div class="tot"><span>Total to collect</span><span>${money(o.total,o.currency)}</span></div>
+      </div>
+    </div>
+    ${o.fiabilo&&o.fiabilo.code?`<div class="fb">🚚 Fiabilo <b>${esc(o.fiabilo.code)}</b> · ${esc(o.fiabilo.etat||"")}${o.fiabilo.livreur?` · livreur <a href="tel:${esc(o.fiabilo.livreur)}">${esc(o.fiabilo.livreur)}</a>`:""}${o.fiabilo.lien?` · <a href="${esc(o.fiabilo.lien)}" target="_blank" rel="noopener">suivi</a>`:""}</div>`:(o.status==="confirmed"?`<div><button class="btn fbsend" data-act="fiabilo">🚚 Envoyer à Fiabilo</button></div>`:"")}
+    <div class="actions">${Object.keys(STATUS).map(s=>`<button class="btn${s===o.status?" cur":""}" data-status="${s}" ${st.next.includes(s)||s===o.status?"":"style='opacity:.45'"}>${STATUS[s].label}</button>`).join("")}</div>
+    <div class="row2">
+      <textarea data-field="notes" placeholder="Notes (e.g. call back at 6pm)">${esc(o.notes)}</textarea>
+      <input class="trk" data-field="tracking" placeholder="Tracking number" value="${esc(o.tracking)}">
+    </div>
+  </article>`;
+}
+
+let pending = 0;
+async function patch(id, body){
+  pending++;
+  try {
+    const d = await api("/api/orders/"+encodeURIComponent(id), {method:"PATCH", body:JSON.stringify(body)});
+    if (d.order){ const i = orders.findIndex(o=>o.id===id); if (i >= 0) orders[i] = {...d.order, _fresh: orders[i]._fresh}; }
+    return d;
+  } finally { pending--; }
+}
+// instant update on screen, saved in the background; undo if the save fails
+function quick(id, change, body){
+  const o = orders.find(x=>x.id===id); if (!o) return;
+  const before = {status:o.status, calls:o.calls};
+  change(o); render();
+  patch(id, body).then(()=>{ if (!pending) render(); }).catch(()=>{ Object.assign(o, before); render(); openModal("<p>❌ Pas enregistré (connexion). Réessayez.</p>"); });
+}
+
+$("#tabs").onclick = e => { const b=e.target.closest("[data-tab]"); if(!b) return; tab=b.dataset.tab; try{localStorage.setItem("ordersTab",tab)}catch(e){}; render(); };
+$("#q").oninput = render;
+$("#list").onclick = async e => {
+  const cb = e.target.closest("[data-sel]");
+  if (cb) { cb.checked ? selected.add(cb.dataset.sel) : selected.delete(cb.dataset.sel); updateSelbar(); return; }
+  const art = e.target.closest(".order"); if(!art) return;
+  const id = art.dataset.id;
+  const sb = e.target.closest("[data-status]");
+  if (sb) { const s = sb.dataset.status; quick(id, o=>{ o.status = s; }, {status:s}); return; }
+  if (e.target.closest("[data-act=call]")) { quick(id, o=>{ o.calls = (o.calls||0)+1; }, {addCall:true}); return; }
+  const fb = e.target.closest("[data-act=fiabilo]");
+  if (fb) {
+    if (!fb.dataset.sure) { fb.dataset.sure = "1"; fb.textContent = "Cliquez encore pour confirmer l'envoi"; return; }
+    fb.disabled = true; fb.textContent = "Envoi à Fiabilo…";
+    const r = await gfetch("/api/orders/"+encodeURIComponent(id)+"/fiabilo", {method:"POST", headers:{authorization:"Bearer "+token}});
+    const d = await r.json();
+    if (!r.ok) { openModal(`<h3 style="margin:0">❌ Fiabilo</h3><pre>${esc(d.error||"Erreur")}</pre>`); fb.disabled=false; fb.textContent="🚚 Envoyer à Fiabilo"; delete fb.dataset.sure; return; }
+    openModal(`<h3 style="margin:0">✅ Colis créé chez Fiabilo</h3><p>Code : <b>${esc(d.code)}</b></p>`);
+    await load();
+  }
+};
+$("#list").addEventListener("change", async e => {
+  const f = e.target.dataset.field; if(!f) return;
+  const id = e.target.closest(".order").dataset.id;
+  await patch(id, {[f]: e.target.value});
+});
+
+$("#fbAllBtn").onclick = async () => {
+  const n = orders.filter(o=>o.status==="confirmed" && !(o.fiabilo&&o.fiabilo.code)).length;
+  if (!n) { openModal("<p>Aucune commande confirmée à envoyer.</p>"); return; }
+  openModal(`<p>Envoyer <b>${n}</b> commande(s) confirmée(s) à Fiabilo ? Chaque envoi crée un vrai colis.</p><button class="btn fbsend" id="fbGo">Oui, envoyer</button>`);
+  $("#fbGo").onclick = async () => {
+    $("#modalBody").innerHTML = "<p>Envoi en cours…</p>";
+    const d = await api("/api/fiabilo/send-confirmed", {method:"POST"});
+    openModal(`<h3 style="margin:0">🚚 Fiabilo</h3><p>${d.sent.length} envoyée(s)</p>${d.sent.length?`<pre>${esc(d.sent.join("\n"))}</pre>`:""}${d.errors.length?`<p>Erreurs :</p><pre>${esc(d.errors.join("\n"))}</pre>`:""}`);
+    await load();
+  };
+};
+$("#fbSyncBtn").onclick = async () => {
+  openModal("<p>Mise à jour du suivi Fiabilo…</p>");
+  const d = await api("/api/fiabilo/sync", {method:"POST"});
+  openModal(d.error ? `<pre>${esc(d.error)}</pre>` : `<p>${d.checked} colis vérifié(s), ${d.updated} mis à jour.</p>${d.errors&&d.errors.length?`<pre>${esc(d.errors.join("\n"))}</pre>`:""}`);
+  await load();
+};
+function updateSelbar(){ const n = selected.size; $("#selbar").classList.toggle("hidden", !n); $("#selN").textContent = n + " sélectionnée(s)"; }
+$("#selClear").onclick = () => { selected.clear(); render(); };
+$("#selAll").onclick = () => { const all = lastRows.length && lastRows.every(o=>selected.has(o.id)); lastRows.forEach(o => all ? selected.delete(o.id) : selected.add(o.id)); render(); };
+function thumbUrl(u){ if(!u) return ""; if(u.startsWith("//")) u = "https:"+u; return u + (u.includes("?")?"&":"?") + "width=160"; }
+function pilot(){
+  const sel = orders.filter(o=>selected.has(o.id));
+  const groups = new Map(); let pieces = 0, cash = 0;
+  sel.forEach(o => { cash += Number(o.total)||0; (o.items||[]).forEach(i => {
+    pieces++;
+    const key = String(i.variantId || i.title);
+    const parts = String(i.title||"").split(" — ");
+    const g = groups.get(key) || { title: parts[0], variant: parts.slice(1).join(" — "), image: i.image || "", count: 0, orders: [] };
+    g.count++; if (!g.image && i.image) g.image = i.image;
+    const num = o.shopifyName || o.id; if (!g.orders.includes(num)) g.orders.push(num);
+    groups.set(key, g);
+  }); });
+  const list = [...groups.values()].sort((a,b)=> b.count-a.count || a.title.localeCompare(b.title));
+  $("#pilotSub").textContent = `${sel.length} commande(s) · ${pieces} pièce(s)`;
+  $("#pilotBody").innerHTML = `<div class="tiles"><div class="tile"><b>${pieces}</b><span>Pièces</span></div><div class="tile"><b>${list.length}</b><span>Modèles</span></div><div class="tile"><b>${sel.length}</b><span>Commandes</span></div></div>
+    <div class="lbl">À sortir du stock</div>
+    ${list.map(g=>`<div class="pk">${g.image?`<img src="${esc(thumbUrl(g.image))}" alt="">`:`<div class="ph">⌚</div>`}<div><div class="t">${esc(g.title)}</div>${g.variant?`<div class="v">${esc(g.variant)}</div>`:""}<div class="o">${g.orders.map(n=>"#"+esc(n)).join(", ")}</div></div><div class="q">×${g.count}</div></div>`).join("") || `<div class="empty">Aucune montre.</div>`}
+    <p class="muted" style="margin-top:16px">Total à encaisser pour ces commandes : <b>${money(cash,"TND")}</b></p>`;
+  $("#drawer").classList.add("on");
+}
+$("#pilotBtn").onclick = pilot;
+$("#pilotClose").onclick = () => $("#drawer").classList.remove("on");
+$("#pilotPrint").onclick = () => window.print();
+$("#exportBtn").onclick = () => {
+  const rows = orders.filter(o=>o.status==="confirmed");
+  if (!rows.length) { openModal("<p>No confirmed orders to export.</p>"); return; }
+  const head = ["Order","Name","Phone","Governorate","City","Address","Products","Qty","Total (COD)","Notes"];
+  const lines = rows.map(o=>[o.shopifyName||o.id,o.customer.name,o.customer.phone,o.customer.governorate,o.customer.city,o.customer.address,o.items.map(i=>i.title).join(" + "),o.items.length,o.total,o.notes]);
+  const csv = "﻿"+[head,...lines].map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = `confirmed-orders-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+};
+
+if (false) $("#setupBtn").onclick = async () => {
+  openModal("<p>Checking Shopify connection…</p>");
+  const d = await api("/api/setup", {method:"POST"});
+  openModal(d.connected
+    ? `<h3 style="margin:0">✅ Connected to ${esc(d.shop.name)}</h3><p class="muted">Currency: ${esc(d.shop.currencyCode)} · ${esc(d.shop.myshopifyDomain)}</p><p>Webhook for Shopify checkout orders: <b>${esc(d.webhook)}</b></p>`
+    : `<h3 style="margin:0">❌ Not connected</h3><pre>${esc(d.error)}</pre>`);
+};
+function openModal(h){ $("#modalBody").innerHTML=h; $("#modal").classList.add("on"); }
+function closeModal(){ $("#modal").classList.remove("on"); }
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) document.title="Orders"; });
+
+let timer;
+function start(){ $("#login").classList.add("hidden"); $("#app").classList.remove("hidden"); load().catch(()=>{}); clearInterval(timer); timer=setInterval(()=>load().catch(()=>{}), 30000); }
+if (token) start();
+</script>
 </body>
 </html>
