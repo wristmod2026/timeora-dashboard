@@ -62,7 +62,16 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ma
 .s-new{color:var(--new);background:var(--new-bg)} .s-no_answer{color:var(--wait);background:var(--wait-bg)}
 .s-confirmed{color:var(--ok);background:var(--ok-bg)} .s-cancelled{color:var(--bad);background:var(--bad-bg)}
 .s-shipped{color:var(--ship);background:var(--ship-bg)} .s-delivered{color:var(--done);background:var(--done-bg)}
-.s-returned{color:var(--ret);background:var(--ret-bg)}
+.s-returned{color:var(--ret);background:var(--ret-bg)} .s-return_transit{color:var(--wait);background:var(--wait-bg)}
+.ptable{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.ptable th,.ptable td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;font-size:14px}
+.ptable th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ptable td.n{text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.ptable img,.ptable .ph{width:48px;height:48px;border-radius:10px;object-fit:contain;background:#f3f4f6;display:grid;place-items:center;font-size:22px}
+.ptable .o{color:var(--muted);font-size:12px}
+.rate{border-radius:999px;padding:3px 9px;font-weight:700;font-size:12.5px}
+.pwrap{overflow-x:auto}
+.periods{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 .offer{background:var(--gold-soft);color:var(--gold);font-weight:600}
 .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}
 @media(max-width:720px){.grid{grid-template-columns:1fr}}
@@ -165,11 +174,13 @@ const STATUS = {
   no_answer:{label:"No answer", next:["confirmed","no_answer","cancelled"]},
   confirmed:{label:"Confirmed", next:["shipped","cancelled"]},
   cancelled:{label:"Cancelled", next:["new"]},
-  shipped:{label:"Shipped", next:["delivered","returned"]},
+  shipped:{label:"Shipped", next:["delivered","return_transit"]},
   delivered:{label:"Delivered", next:[]},
-  returned:{label:"Returned", next:[]},
+  return_transit:{label:"Retour en route", next:["returned","delivered"]},
+  returned:{label:"Reçu en stock", next:[]},
 };
-const TABS = [["todo","To call"],["all","All"],["new","New"],["no_answer","No answer"],["confirmed","Confirmed"],["shipped","Shipped"],["delivered","Delivered"],["returned","Returned"],["cancelled","Cancelled"]];
+const TABS = [["todo","To call"],["all","All"],["new","New"],["no_answer","No answer"],["confirmed","Confirmed"],["shipped","Shipped"],["delivered","Delivered"],["return_transit","Retour en route"],["returned","Reçu en stock"],["cancelled","Cancelled"],["products","📦 Retours / Produits"]];
+let period = "all";
 let token = null, orders = [], tab = "todo", knownIds = null, selected = new Set(), lastRows = [];
 try { token = localStorage.getItem("ordersToken"); tab = localStorage.getItem("ordersTab") || "todo"; } catch(e){}
 
@@ -217,13 +228,41 @@ async function load(){
   if (!typing) render();
 }
 
+function inPeriod(iso){ if (period==="all") return true; const days = period==="today" ? 0 : Number(period); const t = new Date(iso); if (period==="today") return t.toDateString()===new Date().toDateString(); return Date.now()-t <= days*86400000; }
+function renderProducts(){
+  const groups = new Map(); let del=0, tr=0, back=0;
+  const add = (o, kind, when) => { if (!inPeriod(when)) return; (o.items||[]).forEach(i => {
+    const key = String(i.variantId || i.title); const parts = String(i.title||"").split(" — ");
+    const g = groups.get(key) || { title: parts[0], variant: parts.slice(1).join(" — "), image: i.image||"", del:0, tr:0, back:0, ret:[] };
+    if (!g.image && i.image) g.image = i.image;
+    g[kind]++; if (kind!=="del") { const num = "#"+(o.shopifyName||o.id); if (!g.ret.includes(num)) g.ret.push(num); }
+    if (kind==="del") del++; else if (kind==="tr") tr++; else back++;
+    groups.set(key, g); }); };
+  orders.forEach(o => {
+    if (o.status==="delivered") add(o, "del", o.createdAt);
+    else if (o.status==="return_transit") add(o, "tr", o.returnAt || o.createdAt);
+    else if (o.status==="returned") add(o, "back", o.backAt || o.returnAt || o.createdAt);
+  });
+  const rate = (r, d) => (r+d) ? Math.round(r/(r+d)*100) : null;
+  const pill = p => p===null ? "—" : `<span class="rate" style="background:${p>=30?"var(--bad-bg)":p>=15?"var(--wait-bg)":"var(--ok-bg)"};color:${p>=30?"var(--bad)":p>=15?"var(--wait)":"var(--ok)"}">${p}%</span>`;
+  const list = [...groups.values()].sort((a,b)=> (b.back+b.tr)-(a.back+a.tr) || b.del-a.del);
+  const P = [["today","Aujourd'hui"],["7","7 jours"],["30","30 jours"],["all","Tout"]];
+  $("#list").innerHTML = `<div class="periods">${P.map(([k,l])=>`<button class="tab${k===period?" on":""}" data-period="${k}">${l}</button>`).join("")}</div>
+  <div class="tiles"><div class="tile"><b>${back}</b><span>Reçues en stock</span></div><div class="tile"><b>${tr}</b><span>Retour en route</span></div><div class="tile"><b>${del}</b><span>Livrées</span></div></div>
+  <p class="muted" style="margin:-8px 0 12px">Taux de retour global : ${pill(rate(back+tr, del))} — pièces revenues ÷ (livrées + revenues)</p>
+  ${list.length ? `<div class="pwrap"><table class="ptable"><thead><tr><th></th><th>Modèle</th><th>Livrées</th><th>En route</th><th>Reçues en stock</th><th>Taux retour</th></tr></thead><tbody>
+  ${list.map(g=>`<tr><td>${g.image?`<img src="${esc(thumbUrl(g.image))}" alt="">`:`<div class="ph">⌚</div>`}</td><td><b>${esc(g.title)}</b>${g.variant?`<div class="o">${esc(g.variant)}</div>`:""}${g.ret.length?`<div class="o">Retours : ${esc(g.ret.join(", "))}</div>`:""}</td><td class="n">${g.del}</td><td class="n">${g.tr||"—"}</td><td class="n">${g.back||"—"}</td><td>${pill(rate(g.back+g.tr, g.del))}</td></tr>`).join("")}
+  </tbody></table></div>` : `<div class="empty">Aucune livraison ni retour sur cette période.</div>`}`;
+}
+$("#list").addEventListener("click", e => { const b = e.target.closest("[data-period]"); if (!b) return; period = b.dataset.period; try{localStorage.setItem("ordersPeriod",period)}catch(x){}; render(); });
+try { period = localStorage.getItem("ordersPeriod") || "all"; } catch(x){}
 function inTab(o){ return tab==="all" ? true : tab==="todo" ? (o.status==="new"||o.status==="no_answer") : o.status===tab; }
 
 function render(){
   // stats
   const today = new Date().toDateString();
   const cnt = s => orders.filter(o=>o.status===s).length;
-  const decided = cnt("confirmed")+cnt("shipped")+cnt("delivered")+cnt("returned")+cnt("cancelled");
+  const decided = cnt("confirmed")+cnt("shipped")+cnt("delivered")+cnt("return_transit")+cnt("returned")+cnt("cancelled");
   const confirmedish = decided - cnt("cancelled");
   const shippedOut = orders.filter(o=>o.status==="shipped");
   const delivered = orders.filter(o=>o.status==="delivered");
@@ -240,10 +279,11 @@ function render(){
 
   // tabs
   $("#tabs").innerHTML = TABS.map(([k,l])=>{
-    const n = k==="all"?orders.length : k==="todo"? cnt("new")+cnt("no_answer") : cnt(k);
+    const n = k==="all"?orders.length : k==="todo"? cnt("new")+cnt("no_answer") : k==="products" ? "" : cnt(k);
     return `<button class="tab${k===tab?" on":""}" data-tab="${k}">${l}<span class="n">${n}</span></button>`;
   }).join("");
 
+  if (tab === "products") { renderProducts(); updateSelbar(); return; }
   // list
   const q = $("#q").value.trim().toLowerCase();
   const rows = orders.filter(inTab).filter(o => !q || [o.customer.name,o.customer.phone,o.shopifyName,o.id,o.customer.city].join(" ").toLowerCase().includes(q));
